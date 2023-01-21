@@ -19,6 +19,8 @@ class ClientGetOrCreateView(RetrieveAPIView):
         if not existing_obj:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
+            if serializer.validated_data.get('affiliate'):
+                serializer.validated_data.get('affiliate').increment_ref_count()
             self.perform_create(serializer)
             return Response(serializer.data, status=status.HTTP_201_CREATED, )
 

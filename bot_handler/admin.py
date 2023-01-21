@@ -1,4 +1,7 @@
 from django.contrib import admin
+from import_export import resources
+from import_export.admin import ExportMixin
+
 
 from bot_handler.models import Client, Task, UserTask, WithdrawalOrder, SiteSettings
 
@@ -25,12 +28,15 @@ class UserTaskInline(admin.TabularInline):
         return obj.proof.image_answer
 
 
+class ClientResource(resources.ModelResource):
+    class Meta:
+        model = Client
+
+
 @admin.register(Client)
-class ClientAdmin(admin.ModelAdmin):
+class ClientAdmin(ExportMixin, admin.ModelAdmin):
     list_display = ('user_id', 'tg_username', 'phone', 'discord_username', 'task_sum', 'balance')
     inlines = (UserTaskInline,)
-
-
 
 
 @admin.register(Task)

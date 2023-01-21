@@ -58,6 +58,11 @@ class Client(models.Model):
         default=False
     )
 
+    def increment_ref_count(self):
+        self.referrals += 1
+        self.balance += SiteSettings.load().referral_cost
+        self.save(update_fields=['referrals', 'balance'])
+
     def __str__(self):
         return '{} {}'.format(self.tg_username, self.user_id)
 
