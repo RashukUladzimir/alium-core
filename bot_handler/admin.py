@@ -1,14 +1,17 @@
 from django.contrib import admin
 from import_export import resources
 from import_export.admin import ExportMixin
+from import_export.fields import Field
 
+from rangefilter.filters import DateTimeRangeFilter
 
 from bot_handler.models import Client, Task, UserTask, WithdrawalOrder, SiteSettings
+from bot_handler.forms import UserTaskForm
 
 
 class UserTaskInline(admin.TabularInline):
     model = UserTask
-
+    form = UserTaskForm
     extra = 0
     fields = ('task', 'completed', 'proof_text', 'proof_image')
     readonly_fields = ('task', 'proof_text', 'proof_image')
@@ -29,15 +32,24 @@ class UserTaskInline(admin.TabularInline):
 
 
 class ClientResource(resources.ModelResource):
+    completed_tasks = Field()
+
     class Meta:
         model = Client
+        fields = ['affiliate', 'user_id', 'tg_username', 'phone', 'discord_username', 'referrals',
+                  'task_sum', 'balance', 'wallet', 'completed_tasks']
+        export_order = fields
+
+    def dehydrate_completed_tasks(self, client):
+        completed_tasks = client.usertask_set.filter(completed=True).values_list('task_id', flat=True)
+        return ', '.join(list(map(str, completed_tasks)))
 
 
 @admin.register(Client)
 class ClientAdmin(ExportMixin, admin.ModelAdmin):
     list_display = ('user_id', 'tg_username', 'phone', 'discord_username', 'task_sum', 'balance')
     inlines = (UserTaskInline,)
-
+    resource_class = ClientResource
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
@@ -46,7 +58,11 @@ class TaskAdmin(admin.ModelAdmin):
 
 @admin.register(WithdrawalOrder)
 class WithdrawalOrderAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['client', 'withdrawal_sum', 'created', 'payed']
+    list_filter = (
+        'payed',
+        ('created', DateTimeRangeFilter),
+    )
 
 
 @admin.register(SiteSettings)

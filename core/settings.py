@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'import_export',
     'rest_framework',
     'tinymce',
+    'rangefilter',
+
 
     'bot_handler',
 

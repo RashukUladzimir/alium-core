@@ -63,6 +63,16 @@ class Client(models.Model):
         self.balance += SiteSettings.load().referral_cost
         self.save(update_fields=['referrals', 'balance'])
 
+    def add_task_amount(self, task):
+        self.balance = self.balance + task.price
+        self.task_sum += 1
+        self.save(update_fields=['balance', 'task_sum'])
+
+    def remove_task_amount(self, task):
+        self.balance = self.balance - task.price
+        self.task_sum -= 1
+        self.save(update_fields=['balance', 'task_sum'])
+
     def __str__(self):
         return '{} {}'.format(self.tg_username, self.user_id)
 
