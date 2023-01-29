@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser, DataAndFiles
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -88,16 +89,17 @@ class WithdrawalOrderCreateView(CreateAPIView):
 
 class ProofCreateView(CreateAPIView):
     serializer_class = ProofSerializer
+    parser_classes = (MultiPartParser, FileUploadParser)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        proof = self.perform_create(serializer)
 
         client_id = serializer.validated_data.get('client_id')
         client = Client.objects.get(user_id=client_id)
         user_task = client.usertask_set.get(task_id=serializer.validated_data.get('task_id'))
 
-        proof = self.perform_create(serializer)
         user_task.proof = proof
         user_task.save()
 

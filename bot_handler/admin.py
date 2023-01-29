@@ -5,7 +5,7 @@ from import_export.fields import Field
 
 from rangefilter.filters import DateTimeRangeFilter
 
-from bot_handler.models import Client, Task, UserTask, WithdrawalOrder, SiteSettings
+from bot_handler.models import Client, Task, UserTask, WithdrawalOrder, SiteSettings, Proof
 from bot_handler.forms import UserTaskForm
 
 
@@ -28,7 +28,7 @@ class UserTaskInline(admin.TabularInline):
     def proof_image(self, obj=None):
         if not obj:
             return None
-        return obj.proof.image_answer
+        return obj.proof.img_preview()
 
 
 class ClientResource(resources.ModelResource):
@@ -64,6 +64,9 @@ class WithdrawalOrderAdmin(admin.ModelAdmin):
         ('created', DateTimeRangeFilter),
     )
 
+@admin.register(Proof)
+class ProofAdmin(admin.ModelAdmin):
+    readonly_fields = ('img_preview',)
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):

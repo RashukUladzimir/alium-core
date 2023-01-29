@@ -1,6 +1,8 @@
 import uuid
 from django.utils import timezone
 from django.db import models
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from tinymce.models import HTMLField
 
 
@@ -99,6 +101,9 @@ class Task(models.Model):
         return self.name
 
 
+def image_folder(instance, filename):
+    return 'photos/{}.jpg'.format(uuid.uuid4().hex)
+
 class Proof(models.Model):
     text_answer = models.CharField(
         null=True,
@@ -108,7 +113,11 @@ class Proof(models.Model):
     image_answer = models.ImageField(
         null=True,
         blank=True,
+        upload_to=image_folder,
     )
+
+    def img_preview(self):  # new
+        return format_html('<img src="{}" style="max-width:200px; max-height:200px"/>'.format(self.image_answer.url))
 
 
 class UserTask(models.Model):
