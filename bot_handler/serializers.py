@@ -8,6 +8,12 @@ class ClientGetSerializer(serializers.ModelSerializer):
         fields = ['user_id', 'tg_username', 'affiliate', 'welcome_passed']
 
 
+class ClientPutSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Client
+        fields = ['discord_username', 'wallet', 'welcome_passed']
+
+
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task

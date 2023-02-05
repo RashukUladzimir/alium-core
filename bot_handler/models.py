@@ -2,7 +2,6 @@ import uuid
 from django.utils import timezone
 from django.db import models
 from django.utils.html import format_html
-from django.utils.safestring import mark_safe
 from tinymce.models import HTMLField
 
 
@@ -103,6 +102,7 @@ class Task(models.Model):
 
 def image_folder(instance, filename):
     return 'photos/{}.jpg'.format(uuid.uuid4().hex)
+
 
 class Proof(models.Model):
     text_answer = models.CharField(

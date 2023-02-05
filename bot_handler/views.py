@@ -1,11 +1,12 @@
 from decimal import Decimal
 
-from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView, UpdateAPIView
 from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser, DataAndFiles
 from rest_framework.response import Response
 from rest_framework import status
 
-from bot_handler.serializers import ClientGetSerializer, TaskSerializer, WithdrawalOrderSerializer, ProofSerializer
+from bot_handler.serializers import ClientGetSerializer, TaskSerializer, WithdrawalOrderSerializer, \
+    ProofSerializer, ClientPutSerializer
 from bot_handler.models import Task, Client, SiteSettings
 
 
@@ -108,3 +109,10 @@ class ProofCreateView(CreateAPIView):
 
     def perform_create(self, serializer):
         return serializer.save()
+
+
+class ClientUpdateView(UpdateAPIView):
+    serializer_class = ClientPutSerializer
+    queryset = Client.objects.all()
+    lookup_field = 'user_id'
+
