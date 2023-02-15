@@ -1,4 +1,6 @@
 import uuid
+import re
+
 from django.utils import timezone
 from django.db import models
 from django.utils.html import format_html
@@ -46,9 +48,6 @@ class Client(models.Model):
         null=True,
         blank=True,
     )
-    referral_link = models.UUIDField(
-        default=uuid.uuid4,
-    )
 
     tasks = models.ManyToManyField(
         'Task',
@@ -92,9 +91,23 @@ class Task(models.Model):
         decimal_places=2,
         default=0,
     )
+
+    need_validation = models.BooleanField(
+        default=False,
+    )
+
     success_text = models.TextField()
     fail_text = models.TextField()
-    proof_type = models.CharField(max_length=20)
+    proof_type = models.CharField(
+        max_length=20,
+    )
+
+    validator = models.OneToOneField(
+        'Validator',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return self.name
@@ -138,6 +151,11 @@ class UserTask(models.Model):
         null=True,
         blank=True,
     )
+
+    def validate_proof(self):
+        proof = self.proof.text_answer
+        validator = re.compile(self.task.validator.expression)
+        return re.fullmatch(validator, proof) is not None
 
 
 class WithdrawalOrder(models.Model):
@@ -190,3 +208,20 @@ class SiteSettings(SingletonModel):
 
     def __str__(self):
         return 'Site Setting'
+
+
+class Validator(models.Model):
+    name = models.CharField(
+        null=False,
+        blank=False,
+        max_length=30,
+    )
+
+    expression = models.TextField(
+        null=False,
+        blank=False,
+
+    )
+
+    def __str__(self):
+        return self.name

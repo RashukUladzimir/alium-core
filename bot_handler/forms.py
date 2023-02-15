@@ -16,3 +16,8 @@ class UserTaskForm(forms.ModelForm):
                 client.add_task_amount(task)
             else:
                 client.remove_task_amount(task)
+
+
+class MessageForm(forms.Form):
+    _selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
+    message = forms.CharField(widget=forms.Textarea, required=False)

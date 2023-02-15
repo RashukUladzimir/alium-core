@@ -102,6 +102,14 @@ class ProofCreateView(CreateAPIView):
         user_task = client.usertask_set.get(task_id=serializer.validated_data.get('task_id'))
 
         user_task.proof = proof
+        if user_task.task.need_validation:
+            if not user_task.validate_proof():
+                user_task.save()
+                return Response(serializer.data, status=status.HTTP_403_FORBIDDEN)
+
+            user_task.completed = True
+            client.add_task_amount(user_task.task)
+
         user_task.save()
 
         headers = self.get_success_headers(serializer.data)

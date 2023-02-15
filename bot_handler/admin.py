@@ -1,12 +1,19 @@
 from django.contrib import admin
+from django.contrib.admin import helpers
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
+from django.template.response import TemplateResponse
 from import_export import resources
 from import_export.admin import ExportMixin
 from import_export.fields import Field
+from django.conf import settings
 
 from rangefilter.filters import DateTimeRangeFilter
 
-from bot_handler.models import Client, Task, UserTask, WithdrawalOrder, SiteSettings, Proof
-from bot_handler.forms import UserTaskForm
+from bot_handler.models import Client, Task, UserTask, WithdrawalOrder, SiteSettings, \
+    Proof, Validator
+from bot_handler.forms import UserTaskForm, MessageForm
+from bot_handler.utils import broadcast_message
 
 
 class UserTaskInline(admin.TabularInline):
@@ -51,6 +58,27 @@ class ClientAdmin(ExportMixin, admin.ModelAdmin):
     inlines = (UserTaskInline,)
     resource_class = ClientResource
 
+    actions = ['send_message', ]
+
+    def send_message(self, request, queryset):
+        if 'apply' in request.POST:
+            broadcast_message_text = request.POST["message"]
+            bot_token = settings.BOT_TOKEN
+            user_ids = [u.user_id for u in queryset]
+            broadcast_message(bot_token, user_ids, broadcast_message_text)
+            return HttpResponseRedirect(request.get_full_path())
+
+        form = MessageForm(initial={'_selected_action': queryset.values_list('user_id', flat=True)})
+        context = {
+            'form': form,
+            'items': queryset,
+        }
+        return render(request, "admin/broadcast_message.html", context)
+
+
+    def changelist_view(self, request, extra_context=None):
+        return super(ClientAdmin, self).changelist_view(request, extra_context)
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = ('name', 'price', 'published')
@@ -64,9 +92,17 @@ class WithdrawalOrderAdmin(admin.ModelAdmin):
         ('created', DateTimeRangeFilter),
     )
 
+    actions = ['mark_as_payed', ]
+
+    def mark_as_payed(self, request, queryset):
+        queryset.update(payed=True)
+    mark_as_payed.description = 'Mark selected withdrawals as payed'
+
+
 @admin.register(Proof)
 class ProofAdmin(admin.ModelAdmin):
     readonly_fields = ('img_preview',)
+
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
@@ -76,3 +112,8 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 @admin.register(UserTask)
 class UserTaskAdmin(admin.ModelAdmin):
     list_display = ('client', 'task', 'completed')
+
+
+@admin.register(Validator)
+class ValidatorAdmin(admin.ModelAdmin):
+    pass
