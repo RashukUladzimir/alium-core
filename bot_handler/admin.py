@@ -1,8 +1,6 @@
 from django.contrib import admin
-from django.contrib.admin import helpers
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
-from django.template.response import TemplateResponse
 from import_export import resources
 from import_export.admin import ExportMixin
 from import_export.fields import Field
@@ -75,9 +73,9 @@ class ClientAdmin(ExportMixin, admin.ModelAdmin):
         }
         return render(request, "admin/broadcast_message.html", context)
 
-
     def changelist_view(self, request, extra_context=None):
         return super(ClientAdmin, self).changelist_view(request, extra_context)
+
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
@@ -86,13 +84,18 @@ class TaskAdmin(admin.ModelAdmin):
 
 @admin.register(WithdrawalOrder)
 class WithdrawalOrderAdmin(admin.ModelAdmin):
-    list_display = ['client', 'withdrawal_sum', 'created', 'payed']
+    list_display = ['client', '_wallet', 'withdrawal_sum', 'created', 'payed',]
     list_filter = (
         'payed',
         ('created', DateTimeRangeFilter),
     )
 
     actions = ['mark_as_payed', ]
+
+    def _wallet(self, obj=None):
+        if not obj:
+            return None
+        return obj.client.wallet
 
     def mark_as_payed(self, request, queryset):
         queryset.update(payed=True)

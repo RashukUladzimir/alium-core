@@ -7,6 +7,8 @@ from django.utils.html import format_html
 from tinymce.models import HTMLField
 
 
+PROOF_TYPE_CHOICES = (('text', 'text'),('photo', 'photo'), )
+
 class Client(models.Model):
     affiliate = models.ForeignKey(
         "self",
@@ -100,6 +102,9 @@ class Task(models.Model):
     fail_text = models.TextField()
     proof_type = models.CharField(
         max_length=20,
+        choices=PROOF_TYPE_CHOICES,
+        null=False,
+        blank=False,
     )
 
     validator = models.OneToOneField(
