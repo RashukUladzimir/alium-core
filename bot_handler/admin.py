@@ -52,7 +52,7 @@ class ClientResource(resources.ModelResource):
 
 @admin.register(Client)
 class ClientAdmin(ExportMixin, admin.ModelAdmin):
-    list_display = ('user_id', 'tg_username', 'phone', 'discord_username', 'task_sum', 'balance')
+    list_display = ('user_id', 'tg_username', 'phone', 'discord_username', 'task_sum', 'balance', 'unverified_balance')
     inlines = (UserTaskInline,)
     resource_class = ClientResource
 
@@ -104,7 +104,19 @@ class WithdrawalOrderAdmin(admin.ModelAdmin):
 
 @admin.register(Proof)
 class ProofAdmin(admin.ModelAdmin):
+
+    list_display = ['__str__', '_task_name', '_user']
     readonly_fields = ('img_preview',)
+
+    def _task_name(self, obj=None):
+        if not hasattr(obj, 'usertask'):
+            return None
+        return obj.usertask.task.name
+
+    def _user(self, obj=None):
+        if not hasattr(obj, 'usertask'):
+            return None
+        return obj.usertask.client.tg_username
 
 
 @admin.register(SiteSettings)

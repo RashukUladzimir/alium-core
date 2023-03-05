@@ -102,13 +102,20 @@ class ProofCreateView(CreateAPIView):
         user_task = client.usertask_set.get(task_id=serializer.validated_data.get('task_id'))
 
         user_task.proof = proof
-        if user_task.task.need_validation:
+        if user_task.task.need_validation and user_task.task.validator is not None:
             if not user_task.validate_proof():
                 user_task.save()
                 return Response(serializer.data, status=status.HTTP_403_FORBIDDEN)
 
             user_task.completed = True
+            user_task.proof_exists = True
             client.add_task_amount(user_task.task)
+            if client.affiliate and not client.is_verified_referral:
+                client.affiliate.add_ref_amount_to_balance()
+
+        if not user_task.proof_exists:
+            user_task.proof_exists = True
+            client.increment_unverified_balance(user_task.task)
 
         user_task.save()
 

@@ -13,9 +13,11 @@ class UserTaskForm(forms.ModelForm):
             client = self.cleaned_data.get('client')
             task = self.cleaned_data.get('id').task
             if self.cleaned_data.get('completed'):
-                client.add_task_amount(task)
+                client.transfer_from_unverified(task)
+                if client.affiliate and client.is_verified_referral is False:
+                    client.affiliate.add_ref_amount_to_balance()
             else:
-                client.remove_task_amount(task)
+                client.transfer_to_unverified(task)
 
 
 class MessageForm(forms.Form):

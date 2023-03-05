@@ -7,7 +7,11 @@ from django.utils.html import format_html
 from tinymce.models import HTMLField
 
 
-PROOF_TYPE_CHOICES = (('text', 'text'),('photo', 'photo'), )
+PROOF_TYPE_CHOICES = (
+    ('text', 'text'),
+    ('photo', 'photo'),
+)
+
 
 class Client(models.Model):
     affiliate = models.ForeignKey(
@@ -40,6 +44,18 @@ class Client(models.Model):
     task_sum = models.IntegerField(
         default=0,
     )
+
+    is_verified_referral = models.BooleanField(
+        default=False,
+
+    )
+
+    unverified_balance = models.DecimalField(
+        max_digits=30,
+        decimal_places=2,
+        default=0,
+    )
+
     balance = models.DecimalField(
         max_digits=30,
         decimal_places=2,
@@ -60,20 +76,42 @@ class Client(models.Model):
         default=False
     )
 
+    def transfer_from_unverified(self, task):
+        self.unverified_balance -= task.price
+        self.balance += task.price
+        self.task_sum += 1
+        self.save(update_fields=['unverified_balance', 'balance', 'task_sum'])
+
+    def transfer_to_unverified(self, task):
+        self.unverified_balance += task.price
+        self.balance -= task.price
+        self.task_sum -= 1
+        self.save(update_fields=['unverified_balance', 'balance', 'task_sum'])
+
+    def increment_unverified_balance(self, task):
+        self.unverified_balance += task.price
+        self.save(update_fields=['unverified_balance'])
+
     def increment_ref_count(self):
         self.referrals += 1
-        self.balance += SiteSettings.load().referral_cost
-        self.save(update_fields=['referrals', 'balance'])
+        self.unverified_balance += SiteSettings.load().referral_cost
+        self.save(update_fields=['referrals', 'unverified_balance'])
 
     def add_task_amount(self, task):
-        self.balance = self.balance + task.price
+        self.balance += task.price
         self.task_sum += 1
         self.save(update_fields=['balance', 'task_sum'])
 
     def remove_task_amount(self, task):
-        self.balance = self.balance - task.price
+        self.balance -= task.price
         self.task_sum -= 1
         self.save(update_fields=['balance', 'task_sum'])
+
+    def add_ref_amount_to_balance(self):
+        ref_cost = SiteSettings.load().referral_cost
+        self.unverified_balance -= ref_cost
+        self.balance += ref_cost
+        self.save(update_fields=['balance', 'unverified_balance'])
 
     def __str__(self):
         return '{} {}'.format(self.tg_username, self.user_id)
@@ -155,6 +193,9 @@ class UserTask(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+    )
+    proof_exists = models.BooleanField(
+        default=False
     )
 
     def validate_proof(self):

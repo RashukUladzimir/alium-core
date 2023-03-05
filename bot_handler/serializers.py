@@ -5,7 +5,7 @@ from bot_handler.models import Client, Task, WithdrawalOrder, Proof
 class ClientGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
-        fields = ['user_id', 'tg_username', 'affiliate', 'welcome_passed', 'balance', 'referrals']
+        fields = ['user_id', 'tg_username', 'affiliate', 'welcome_passed', 'balance', 'referrals', 'unverified_balance']
 
 
 class ClientPutSerializer(serializers.ModelSerializer):
