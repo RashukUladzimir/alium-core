@@ -100,7 +100,7 @@ class ProofCreateView(CreateAPIView):
         client_id = serializer.validated_data.get('client_id')
         client = Client.objects.get(user_id=client_id)
         user_task = client.usertask_set.get(task_id=serializer.validated_data.get('task_id'))
-
+        user_task.delete_proof()
         user_task.proof = proof
         if user_task.task.need_validation and user_task.task.validator is not None:
             if not user_task.validate_proof():

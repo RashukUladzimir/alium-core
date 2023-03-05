@@ -1,3 +1,4 @@
+import os
 import uuid
 import re
 
@@ -5,7 +6,7 @@ from django.utils import timezone
 from django.db import models
 from django.utils.html import format_html
 from tinymce.models import HTMLField
-
+from django.conf import settings
 
 PROOF_TYPE_CHOICES = (
     ('text', 'text'),
@@ -175,6 +176,11 @@ class Proof(models.Model):
     def img_preview(self):  # new
         return format_html('<img src="{}" style="max-width:200px; max-height:200px"/>'.format(self.image_answer.url))
 
+    def delete(self, using=None, keep_parents=False):
+        if self.image_answer:
+            self.image_answer.delete(save=False)
+        super(Proof, self).delete(using, keep_parents)
+
 
 class UserTask(models.Model):
     client = models.ForeignKey(
@@ -197,6 +203,13 @@ class UserTask(models.Model):
     proof_exists = models.BooleanField(
         default=False
     )
+
+    def delete_proof(self):
+        try:
+            if self.proof:
+                self.proof.delete(None, True)
+        except Exception as e:
+            return None
 
     def validate_proof(self):
         proof = self.proof.text_answer
