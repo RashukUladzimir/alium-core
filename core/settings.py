@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import os
 from pathlib import Path
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -42,7 +43,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'tinymce',
     'rangefilter',
-
+    'celery',
+    'django_celery_beat',
 
     'bot_handler',
 
@@ -135,3 +137,19 @@ MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'mediafiles')
 MEDIA_URL = '/media/'
 
 BOT_TOKEN = '5902459858:AAH0M6pjSEcayVr5j5L9oEC_dBEVI93AnR4'
+
+OKLINK_API_KEY = '4af392de-31f9-4c8b-b675-f1f80bcec985'
+
+BSC_SCAN_API_KEY = '4BXJGSJTRT9MM6DNX4C9FJ6AAKEK9PNWBT'
+
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+
+CELERY_BEAT_SCHEDULE = {
+    "sample_task": {
+        "task": "bot_handler.tasks.get_rates",
+        "schedule": crontab(minute="*/20"),
+    },
+}
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'

@@ -42,13 +42,16 @@ class TaskListView(ListAPIView):
         client = Client.objects.get(user_id=request.data.get('user_id'))
         client_completed_tasks = list(client.usertask_set.filter(completed=True).values_list('task', flat=True))
         unfollowed_tasks = Task.objects.exclude(id__in=client_completed_tasks)
+        repeatable_tasks = Task.objects.filter(repeatable=True)
 
-        page = self.paginate_queryset(unfollowed_tasks)
+        result_qs = unfollowed_tasks.union(repeatable_tasks)
+
+        page = self.paginate_queryset(result_qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(unfollowed_tasks, many=True)
+        serializer = self.get_serializer(result_qs, many=True)
         return Response(serializer.data)
 
 
@@ -59,7 +62,10 @@ class TaskRetrieveView(RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         client = Client.objects.get(user_id=request.data.get('user_id'))
-        instance, created = client.usertask_set.get_or_create(task_id=kwargs.get('task_id'))
+        instance = client.usertask_set.filter(task_id=kwargs.get('task_id'), completed=False).first()
+        if not instance:
+            instance = client.usertask_set.create(task_id=kwargs.get('task_id'))
+
         serializer = self.get_serializer(instance.task)
         return Response(serializer.data)
 
@@ -99,9 +105,10 @@ class ProofCreateView(CreateAPIView):
 
         client_id = serializer.validated_data.get('client_id')
         client = Client.objects.get(user_id=client_id)
-        user_task = client.usertask_set.get(task_id=serializer.validated_data.get('task_id'))
+        user_task = client.usertask_set.filter(task_id=serializer.validated_data.get('task_id'), completed=False).first()
         user_task.delete_proof()
         user_task.proof = proof
+
         if user_task.task.need_validation and user_task.task.validator is not None:
             if not user_task.validate_proof():
                 user_task.save()
@@ -111,6 +118,21 @@ class ProofCreateView(CreateAPIView):
             user_task.proof_exists = True
             client.add_task_amount(user_task.task)
             if client.affiliate and not client.is_verified_referral:
+                client.is_verified_referral = True
+                client.save()
+                client.affiliate.add_ref_amount_to_balance()
+
+        if user_task.task.need_trx_proof and user_task.task.trx_proof_chain:
+            if not user_task.validate_transaction():
+                user_task.save()
+                return Response(serializer.data, status=status.HTTP_403_FORBIDDEN)
+
+            user_task.completed = True
+            user_task.proof_exists = True
+            client.add_task_amount(user_task.task)
+            if client.affiliate and not client.is_verified_referral:
+                client.is_verified_referral = True
+                client.save()
                 client.affiliate.add_ref_amount_to_balance()
 
         if not user_task.proof_exists:

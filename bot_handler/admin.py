@@ -7,11 +7,24 @@ from import_export.fields import Field
 from django.conf import settings
 
 from rangefilter.filters import DateTimeRangeFilter
+from django_celery_beat.models import (
+    IntervalSchedule,
+    CrontabSchedule,
+    SolarSchedule,
+    ClockedSchedule,
+    PeriodicTask,
+)
 
 from bot_handler.models import Client, Task, UserTask, WithdrawalOrder, SiteSettings, \
-    Proof, Validator
-from bot_handler.forms import UserTaskForm, MessageForm
+    Proof, Validator, TokenPrice, Contract, StoredTransaction
+from bot_handler.forms import UserTaskForm, MessageForm, TaskForm
 from bot_handler.utils import broadcast_message
+
+admin.site.unregister(SolarSchedule)
+admin.site.unregister(ClockedSchedule)
+admin.site.unregister(PeriodicTask)
+admin.site.unregister(IntervalSchedule)
+admin.site.unregister(CrontabSchedule)
 
 
 class UserTaskInline(admin.TabularInline):
@@ -80,6 +93,7 @@ class ClientAdmin(ExportMixin, admin.ModelAdmin):
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = ('name', 'price', 'published')
+    form = TaskForm
 
 
 @admin.register(WithdrawalOrder)
@@ -132,3 +146,18 @@ class UserTaskAdmin(admin.ModelAdmin):
 @admin.register(Validator)
 class ValidatorAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(TokenPrice)
+class TokenPriceAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'price')
+
+
+@admin.register(Contract)
+class ContractAdmin(admin.ModelAdmin):
+    list_display = ('chain', 'hash')
+
+
+@admin.register(StoredTransaction)
+class StoredTransactionAdmin(admin.ModelAdmin):
+    list_display = ('trx_hash',)

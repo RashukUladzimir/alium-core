@@ -17,7 +17,7 @@ class ClientPutSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['id', 'description', 'price', 'proof_type', 'name', 'success_text', 'fail_text', 'need_validation']
+        fields = ['id', 'description', 'price', 'proof_type', 'name', 'success_text', 'fail_text', 'need_validation', 'need_trx_proof']
 
 
 class WithdrawalOrderSerializer(serializers.ModelSerializer):

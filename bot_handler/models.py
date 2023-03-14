@@ -1,4 +1,3 @@
-import os
 import uuid
 import re
 
@@ -6,11 +5,19 @@ from django.utils import timezone
 from django.db import models
 from django.utils.html import format_html
 from tinymce.models import HTMLField
-from django.conf import settings
+from decimal import Decimal
+
+from bot_handler.hash_validator import OkLinkValidator
 
 PROOF_TYPE_CHOICES = (
     ('text', 'text'),
     ('photo', 'photo'),
+)
+
+CHAIN_SHORTNAME_CHOICES = (
+    ('BSC', 'BSC'),
+    ('ETH', 'ETH'),
+    ('POLYGON', 'POLYGON'),
 )
 
 
@@ -152,6 +159,19 @@ class Task(models.Model):
         null=True,
         blank=True,
     )
+    repeatable = models.BooleanField(
+        default=False,
+    )
+
+    need_trx_proof = models.BooleanField(
+        default=False,
+    )
+    trx_proof_chain = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        choices=CHAIN_SHORTNAME_CHOICES,
+    )
 
     def __str__(self):
         return self.name
@@ -215,6 +235,43 @@ class UserTask(models.Model):
         proof = self.proof.text_answer
         validator = re.compile(self.task.validator.expression)
         return re.fullmatch(validator, proof) is not None
+
+    def validate_transaction(self):
+        trx_hash = self.proof.text_answer
+        chain_name = self.task.trx_proof_chain
+
+        resp = OkLinkValidator().get_transaction(trx_hash, chain_name)
+        if not resp.ok:
+            return False
+        resp = resp.json()
+        data = resp.get('data', [{}])[0]
+        output_details = data.get('outputDetails', None)
+        if output_details is None:
+            return False
+
+        contract_presents = False
+
+        for output_detail in output_details:
+            contract_list = Contract.objects.all().values_list('hash', flat=True)
+            contract_hash = output_detail.get('outputHash')
+            if contract_hash in contract_list:
+                contract_presents = True
+
+        if not contract_presents:
+            return False
+
+        token_transfer_data = data.get('tokenTransferDetails', None)
+        if token_transfer_data is None:
+            return False
+
+        for transfer_data in token_transfer_data:
+            if transfer_data.get('symbol') == 'ALM':
+                amount = Decimal(transfer_data.get('amount', 0))
+                rate = TokenPrice.objects.get(name='ALM').price
+                if amount * rate > Decimal('10'):
+                    StoredTransaction.objects.create(trx_hash=trx_hash)
+                    return True
+        return False
 
 
 class WithdrawalOrder(models.Model):
@@ -284,3 +341,41 @@ class Validator(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Contract(models.Model):
+    chain = models.CharField(
+        max_length=30,
+        default=None,
+        null=False,
+        blank=False,
+        choices=CHAIN_SHORTNAME_CHOICES
+    )
+    hash = models.CharField(
+        primary_key=True,
+        max_length=200,
+    )
+
+
+class TokenPrice(models.Model):
+    name = models.CharField(
+        primary_key=True,
+        max_length=15
+    )
+    price = models.DecimalField(
+        max_digits=30,
+        decimal_places=10,
+        null=False,
+        blank=False,
+        default=0,
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class StoredTransaction(models.Model):
+    trx_hash = models.CharField(
+        unique=True,
+        max_length=200
+    )
