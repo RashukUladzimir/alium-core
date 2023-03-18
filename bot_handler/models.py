@@ -153,7 +153,7 @@ class Task(models.Model):
         blank=False,
     )
 
-    validator = models.OneToOneField(
+    validator = models.ForeignKey(
         'Validator',
         on_delete=models.SET_NULL,
         null=True,
