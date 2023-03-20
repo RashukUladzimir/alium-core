@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-n1ov(g57ck67l6+cx=(=q(=f6@mld^z1&*a+3n0nh998=ufjsg'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -87,8 +87,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': os.getenv('DB_NAME', 'alium'),
+        'USER': os.getenv('DB_USERNAME', 'alium_user'),
+        'PASSWORD': os.getenv('DB_USERPASS', 'root'),
+        'HOST': 'localhost',
+        'PORT': '',
     }
 }
 
