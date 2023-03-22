@@ -96,13 +96,22 @@ class TaskAdmin(admin.ModelAdmin):
     form = TaskForm
 
 
+class WithdrawalOrderResource(resources.ModelResource):
+
+    class Meta:
+        model = WithdrawalOrder
+        fields = ['client__tg_username', 'withdrawal_sum', 'created', 'payed']
+        export_order = fields
+
+
 @admin.register(WithdrawalOrder)
-class WithdrawalOrderAdmin(admin.ModelAdmin):
+class WithdrawalOrderAdmin(ExportMixin, admin.ModelAdmin):
     list_display = ['client', '_wallet', 'withdrawal_sum', 'created', 'payed',]
     list_filter = (
         'payed',
         ('created', DateTimeRangeFilter),
     )
+    resource_class = WithdrawalOrderResource
 
     actions = ['mark_as_payed', ]
 
