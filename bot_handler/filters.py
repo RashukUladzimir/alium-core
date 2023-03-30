@@ -45,7 +45,7 @@ class RefGreaterFilter(InputFilter):
 
 class RefLessFilter(InputFilter):
     parameter_name = 'ref_lte'
-    title = 'Referrals greater'
+    title = 'Referrals less'
 
     def queryset(self, request, queryset):
         if self.value() is not None:
