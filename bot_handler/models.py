@@ -194,7 +194,7 @@ class Proof(models.Model):
     )
 
     def img_preview(self):  # new
-        return format_html('<img src="{}" style="max-width:200px; max-height:200px"/>'.format(self.image_answer.url))
+        return format_html('<img src="{}" style="max-width:500px; max-height:500px"/>'.format(self.image_answer.url))
 
     def delete(self, using=None, keep_parents=False):
         if self.image_answer:
@@ -240,13 +240,16 @@ class UserTask(models.Model):
         trx_hash = self.proof.text_answer
         chain_name = self.task.trx_proof_chain
 
+        print('OKLINK REQUEST for transaction {}, '.format(trx_hash))
         resp = OkLinkValidator().get_transaction(trx_hash, chain_name)
         if not resp.ok:
+            print('OKLINK RESPONSE BAD for transaction {}, '.format(trx_hash))
             return False
         resp = resp.json()
         data = resp.get('data', [{}])[0]
         output_details = data.get('outputDetails', None)
         if output_details is None:
+            print('output_details is bad for transaction {}, '.format(trx_hash))
             return False
 
         contract_presents = False
@@ -255,21 +258,26 @@ class UserTask(models.Model):
             contract_list = Contract.objects.all().values_list('hash', flat=True)
             contract_hash = output_detail.get('outputHash')
             if contract_hash in contract_list:
+                print('contract_hash presents for transaction {}, '.format(trx_hash))
                 contract_presents = True
 
         if not contract_presents:
+            print('contract_presents is false for transaction {}, '.format(trx_hash))
             return False
 
         token_transfer_data = data.get('tokenTransferDetails', None)
         if token_transfer_data is None:
+            print('token_transfer_data is None for transaction {}, '.format(trx_hash))
             return False
 
         for transfer_data in token_transfer_data:
             if transfer_data.get('symbol') == 'ALM':
                 amount = Decimal(transfer_data.get('amount', 0))
+                print('ALM amount for transaction {}: {} '.format(trx_hash, amount))
                 rate = TokenPrice.objects.get(name='ALM').price
                 if amount * rate > Decimal('10'):
                     StoredTransaction.objects.create(trx_hash=trx_hash)
+                    print('transaction {} created '.format(trx_hash))
                     return True
         return False
 

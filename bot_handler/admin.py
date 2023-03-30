@@ -18,7 +18,8 @@ from django_celery_beat.models import (
 from bot_handler.models import Client, Task, UserTask, WithdrawalOrder, SiteSettings, \
     Proof, Validator, TokenPrice, Contract, StoredTransaction
 from bot_handler.forms import UserTaskForm, MessageForm, TaskForm
-from bot_handler.utils import broadcast_message
+from bot_handler.utils import broadcast_message, send_message_to_user
+from bot_handler.filters import UserFilter, RefGreaterFilter, RefLessFilter
 
 admin.site.unregister(SolarSchedule)
 admin.site.unregister(ClockedSchedule)
@@ -65,11 +66,17 @@ class ClientResource(resources.ModelResource):
 
 @admin.register(Client)
 class ClientAdmin(ExportMixin, admin.ModelAdmin):
-    list_display = ('user_id', 'tg_username', 'phone', 'discord_username', 'task_sum', 'balance', 'unverified_balance')
+    list_display = ('user_id', 'tg_username', 'phone', 'discord_username', 'task_sum', 'balance', 'unverified_balance', 'referrals')
     inlines = (UserTaskInline,)
     resource_class = ClientResource
+    search_fields = ['tg_username']
+    list_filter = (
+        UserFilter,
+        RefGreaterFilter,
+        RefLessFilter,
+    )
 
-    actions = ['send_message', ]
+    actions = ['send_message', 'send_deny_message']
 
     def send_message(self, request, queryset):
         if 'apply' in request.POST:
@@ -85,6 +92,13 @@ class ClientAdmin(ExportMixin, admin.ModelAdmin):
             'items': queryset,
         }
         return render(request, "admin/broadcast_message.html", context)
+
+    def send_deny_message(self, request, queryset):
+        for client in queryset:
+            bot_token = settings.BOT_TOKEN
+            user_uncompleted_tasks = list(client.usertask_set.filter(completed=False).values_list('task__name', flat=True))
+            message = "Could you please repeat your tasks: " + ", ".join(user_uncompleted_tasks)
+            send_message_to_user(client.user_id, bot_token, message)
 
     def changelist_view(self, request, extra_context=None):
         return super(ClientAdmin, self).changelist_view(request, extra_context)
@@ -150,6 +164,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 @admin.register(UserTask)
 class UserTaskAdmin(admin.ModelAdmin):
     list_display = ('client', 'task', 'completed')
+    list_filter = (
+        'task',
+    )
+    search_fields = ('client__tg_username', )
 
 
 @admin.register(Validator)
