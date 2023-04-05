@@ -84,6 +84,11 @@ class Client(models.Model):
         default=False
     )
 
+    last_proof_send = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     def transfer_from_unverified(self, task):
         self.unverified_balance -= task.price
         self.balance += task.price

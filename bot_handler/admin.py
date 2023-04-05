@@ -66,7 +66,7 @@ class ClientResource(resources.ModelResource):
 
 @admin.register(Client)
 class ClientAdmin(ExportMixin, admin.ModelAdmin):
-    list_display = ('user_id', 'tg_username', 'phone', 'discord_username', 'task_sum', 'balance', 'unverified_balance', 'referrals')
+    list_display = ('user_id', 'tg_username', 'affiliate', 'discord_username', 'task_sum', 'balance', 'unverified_balance', 'referrals', 'last_proof_send')
     inlines = (UserTaskInline,)
     resource_class = ClientResource
     search_fields = ['tg_username']

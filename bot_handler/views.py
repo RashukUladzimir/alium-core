@@ -1,3 +1,4 @@
+from django.utils import timezone
 from decimal import Decimal
 
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView, UpdateAPIView
@@ -108,6 +109,8 @@ class ProofCreateView(CreateAPIView):
         user_task = client.usertask_set.filter(task_id=serializer.validated_data.get('task_id'), completed=False).first()
         user_task.delete_proof()
         user_task.proof = proof
+        client.last_proof_send = timezone.now()
+        client.save()
 
         if user_task.task.need_validation and user_task.task.validator is not None:
             if not user_task.validate_proof():
